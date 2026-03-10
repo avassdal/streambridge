@@ -9,9 +9,9 @@
 ![Node.js](https://img.shields.io/badge/node-%3E%3D14.0.0-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 
-**Stream media from your personal or shared Emby server directly in Stremio using IMDb, TMDb, Tvdb, or Anidb IDs.**
+**Stream media from your personal or shared Emby server directly in Stremio and UHF App using IMDb, TMDb, Tvdb, or Anidb IDs.**
 
-[Quick Start](#-quick-install) • [Features](#-features) • [Requirements](#-requirements) • [FAQ](#-faq) • [Deployment](#-addon-deployment-guide)
+[Quick Start](#-quick-install) • [Features](#-features) • [Requirements](#-requirements) • [UHF App Setup](#-uhf-app-setup) • [FAQ](#-faq) • [Deployment](#-addon-deployment-guide)
 
 </div>
 
@@ -34,7 +34,9 @@
 
 ## 🌟 Overview
 
-**StreamBridge** is an unofficial Stremio addon that acts as a **stream resolver** for your Emby server. When you browse titles in Stremio using catalog addons like **Cinemeta**, StreamBridge automatically checks if the content exists in your server library and returns direct play links for instant streaming.
+**StreamBridge** is an unofficial Stremio addon that acts as a **stream resolver** for your Emby server. When you browse titles in Stremio or **UHF App** using catalog addons like **Cinemeta**, StreamBridge automatically checks if the content exists in your server library and returns direct play links for instant streaming.
+
+**UHF App Support:** StreamBridge now fully supports UHF App, an IPTV application that can use Stremio manifests as a source. See the [UHF App Setup](#-uhf-app-setup) section below.
 
 **Note:** Jellyfin support will be added once its API for providerID is fixed by the Jellyfin team.
 
@@ -104,6 +106,50 @@ Before installing StreamBridge, ensure you have:
 ### After Installation
 
 Once installed, StreamBridge will automatically return streams for matching titles in your server when you click on them in Stremio. No additional configuration needed!
+
+---
+
+## 📱 UHF App Setup
+
+**UHF App** is an IPTV application that supports Stremio manifests as a source. StreamBridge works seamlessly with UHF App to provide your Emby content.
+
+### Installing StreamBridge in UHF App
+
+1. **Configure StreamBridge**:
+   - Visit the configuration page: [https://39427cdac546-streambridge.baby-beamup.club/configure](https://39427cdac546-streambridge.baby-beamup.club/configure)
+   - Enter your Emby server details and generate your manifest URL
+   - Copy the manifest URL (it will look like: `https://.../<config>/manifest.json`)
+
+2. **Add to UHF App**:
+   - Open UHF App
+   - Navigate to the Stremio sources/addons section
+   - Add a new source using the manifest URL you copied
+   - UHF App will load StreamBridge as a stream provider
+
+3. **Start Streaming**:
+   - Browse content in UHF App
+   - When you select a title, UHF App will query StreamBridge
+   - If the content exists in your Emby server, it will appear as a stream option
+
+### UHF App Compatibility Notes
+
+- ✅ **Direct Play**: UHF App supports direct play URLs from your Emby server
+- ✅ **Multi-Quality**: All quality options (4K, 1080p, 720p, etc.) are available
+- ✅ **Subtitles**: Subtitle support works in UHF App
+- ✅ **HTTP/HTTPS**: Both HTTP and HTTPS server URLs are supported
+- ⚠️ **Public Access Required**: Your Emby server must be accessible from the internet (same as Stremio)
+
+### Troubleshooting UHF App
+
+**Streams not appearing?**
+- Verify your manifest URL is correct in UHF App settings
+- Ensure your Emby server is publicly accessible
+- Check that the content has proper IMDb/TMDb metadata in Emby
+
+**Authentication errors?**
+- Regenerate your manifest URL using the configuration page
+- Verify your User ID and Access Token are still valid
+- Make sure you're using server credentials, not Emby Connect credentials
 
 ---
 

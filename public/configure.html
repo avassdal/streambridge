@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>StreamBridge • Emby ↔ Stremio Setup</title>
+<title>StreamBridge • Emby ↔ Stremio & UHF App Setup</title>
 
 <!-- ----------  Design tokens  ---------- -->
 <style>
@@ -186,7 +186,7 @@ iframe[id*="kofi-wo-container"] {
 <div class="panel">
   <h1>StreamBridge Setup</h1>
   <p style="text-align:center;margin-top:0.5rem;font-size:.8rem;color:var(--text-dim)">
-    Stream from your Emby server to Stremio<br>
+    Stream from your Emby server to Stremio & UHF App<br>
     Need help? See <a href="https://github.com/h4harsimran/streambridge" target="_blank">docs on GitHub</a>.
   </p>
   
@@ -291,6 +291,25 @@ iframe[id*="kofi-wo-container"] {
   </form>
 
   <div id="cfgOut" class="out form-output"></div>
+
+  <!-- UHF App Instructions -->
+  <hr class="section-divider">
+  <h2>📱 Using with UHF App</h2>
+  <div class="form-group">
+    <p style="margin:0 0 1rem;color:var(--text);line-height:1.6">
+      <strong>UHF App</strong> is an IPTV application that supports Stremio manifests. To use StreamBridge with UHF App:
+    </p>
+    <ol style="margin:0;padding-left:1.5rem;color:var(--text);line-height:1.8">
+      <li>Complete steps 1 & 2 above to generate your manifest URL</li>
+      <li>Copy the manifest URL (the long URL starting with <code style="background:#0f1722;padding:0.2rem 0.4rem;border-radius:4px;font-size:0.85rem">https://...</code>)</li>
+      <li>Open UHF App and navigate to Stremio sources/addons</li>
+      <li>Add a new source using your manifest URL</li>
+      <li>Browse content in UHF App - StreamBridge streams will appear automatically</li>
+    </ol>
+    <p style="margin:1rem 0 0;color:var(--text-dim);font-size:0.85rem;line-height:1.6">
+      <strong>Note:</strong> Your Emby server must be publicly accessible (same requirement as Stremio). Both HTTP and HTTPS are supported.
+    </p>
+  </div>
 
 </div>
 
