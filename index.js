@@ -10,6 +10,7 @@ const cors         = require("cors");
 const rateLimit    = require("express-rate-limit");
 const axios        = require("axios");
 const embyClient   = require("./lib/embyClient");
+const embyCatalog  = require("./lib/embyCatalog");
 const { redactServerUrl } = require("./lib/redact");
 const { version } = require("./package.json");
 // JELLYFIN: Jellyfin client import commented out for future Jellyfin support
@@ -101,8 +102,28 @@ function baseManifest () {
     name    : "StreamBridge: Emby to Stremio",
     description:
       "Stream media from your Emby server using IMDb/TMDB/Tvdb/Anidb IDs.",
-    catalogs : [],
+    catalogs : [
+      {
+        id: "emby.movies",
+        type: "movie",
+        name: "Emby Movies",
+        extra: [
+          { name: "skip", isRequired: false }
+        ]
+      },
+      {
+        id: "emby.series",
+        type: "series",
+        name: "Emby TV Shows",
+        extra: [
+          { name: "skip", isRequired: false }
+        ]
+      }
+    ],
     resources: [
+      { name: "catalog",
+        types: ["movie", "series"],
+        idPrefixes: ["emby"] },
       { name: "stream",
         types: ["movie", "series"],
         idPrefixes: ["tt", "imdb:", "tmdb:"] }
@@ -289,6 +310,43 @@ app.get("/:cfg/stream/:type/:id.json", async (req, res) => {
       console.error("Stack trace:", e.stack);
     }
     res.json({ streams: [] });
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// CATALOG route  →  /<cfg>/catalog/<type>/<id>.json
+// ──────────────────────────────────────────────────────────────────────────
+app.get("/:cfg/catalog/:type/:id.json", async (req, res) => {
+  let cfg;
+  try {
+    cfg = decodeCfg(req.params.cfg);
+  } catch {
+    return res.json({ metas: [] });
+  }
+
+  const { type, id } = req.params;
+  const skip = parseInt(req.query.skip) || 0;
+
+  // Only handle our Emby catalog IDs
+  if (id !== "emby.movies" && id !== "emby.series") {
+    return res.json({ metas: [] });
+  }
+
+  if (!cfg.serverUrl || !cfg.userId || !cfg.accessToken) {
+    return res.json({ metas: [] });
+  }
+
+  try {
+    const catalogType = id === "emby.movies" ? "movie" : "series";
+    const metas = await embyCatalog.getCatalogItems(cfg, catalogType, skip, 100);
+    
+    // Set cache for catalog results
+    res.set('Cache-Control', 'public, max-age=300'); // Cache for 5 minutes
+    
+    res.json({ metas });
+  } catch (e) {
+    console.error("Catalog handler error:", e?.message || String(e));
+    res.json({ metas: [] });
   }
 });
 

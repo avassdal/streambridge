@@ -138,7 +138,18 @@ Once installed, StreamBridge will automatically return streams for matching titl
 - ✅ **Subtitles**: Subtitle support works in UHF App
 - ✅ **HTTP/HTTPS**: Both HTTP and HTTPS server URLs are supported
 - ✅ **URL Handling**: StreamBridge automatically handles UHF App's URL format quirks
+- ✅ **Catalog Support**: Browse your Emby library directly in UHF App with dedicated "Emby Movies" and "Emby TV Shows" categories
 - ⚠️ **Public Access Required**: Your Emby server must be accessible from the internet (same as Stremio)
+
+### Browsing Your Emby Library in UHF App
+
+StreamBridge provides catalog support specifically for UHF App, allowing you to browse your Emby library content:
+
+1. **Access Categories**: In UHF App, manage categories to see "Emby Movies" and "Emby TV Shows"
+2. **Browse Your Content**: These categories show only the content available in your Emby library
+3. **Direct Playback**: Click any title to play it directly from your Emby server
+
+This makes it easy to see exactly what content you have available without guessing.
 
 ### Troubleshooting UHF App
 
