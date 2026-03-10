@@ -316,7 +316,8 @@ app.get("/:cfg/stream/:type/:id.json", async (req, res) => {
 // ──────────────────────────────────────────────────────────────────────────
 // CATALOG route  →  /<cfg>/catalog/<type>/<id>.json
 // ──────────────────────────────────────────────────────────────────────────
-app.get("/:cfg/catalog/:type/:id.json", async (req, res) => {
+// Helper function to handle catalog requests (shared by both routes)
+async function handleCatalogRequest(req, res) {
   let cfg;
   try {
     cfg = decodeCfg(req.params.cfg);
@@ -348,7 +349,14 @@ app.get("/:cfg/catalog/:type/:id.json", async (req, res) => {
     console.error("Catalog handler error:", e?.message || String(e));
     res.json({ metas: [] });
   }
-});
+}
+
+// Standard catalog route
+app.get("/:cfg/catalog/:type/:id.json", handleCatalogRequest);
+
+// UHF App compatibility route - UHF App inserts /manifest.json into catalog URLs
+// This creates paths like: /<cfg>/manifest.json/catalog/<type>/<id>.json
+app.get("/:cfg/manifest.json/catalog/:type/:id.json", handleCatalogRequest);
 
 // ──────────────────────────────────────────────────────────────────────────
 // FALLBACK manifest for users who hit /manifest.json with no cfg
