@@ -187,7 +187,8 @@ function shouldFilterStream(stream, hideStreamTypes) {
 // Parameterised MANIFEST route  →  /<cfg>/manifest.json
 //     <cfg> is a base64-url-encoded JSON blob with {serverUrl,userId,accessToken}
 // ──────────────────────────────────────────────────────────────────────────
-app.get("/:cfg/manifest.json", (req, res) => {
+// Helper function to handle manifest requests (shared by both routes)
+function handleManifestRequest(req, res) {
   const cfgString = req.params.cfg;
   let cfg;
   try {
@@ -216,7 +217,14 @@ app.get("/:cfg/manifest.json", (req, res) => {
   mf.behaviorHints.configurationRequired = false;
 
   res.json(mf);
-});
+}
+
+// Standard manifest route
+app.get("/:cfg/manifest.json", handleManifestRequest);
+
+// UHF App compatibility route - UHF App appends /manifest.json to URLs that already end with /manifest.json
+// This creates a doubled path like: /<cfg>/manifest.json/manifest.json
+app.get("/:cfg/manifest.json/manifest.json", handleManifestRequest);
 
 // ──────────────────────────────────────────────────────────────────────────
 // STREAM route  →  /<cfg>/stream/<type>/<id>.json

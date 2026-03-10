@@ -137,6 +137,7 @@ Once installed, StreamBridge will automatically return streams for matching titl
 - ✅ **Multi-Quality**: All quality options (4K, 1080p, 720p, etc.) are available
 - ✅ **Subtitles**: Subtitle support works in UHF App
 - ✅ **HTTP/HTTPS**: Both HTTP and HTTPS server URLs are supported
+- ✅ **URL Handling**: StreamBridge automatically handles UHF App's URL format quirks
 - ⚠️ **Public Access Required**: Your Emby server must be accessible from the internet (same as Stremio)
 
 ### Troubleshooting UHF App
