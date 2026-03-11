@@ -115,12 +115,16 @@ app.post("/api/get-emby-libraries", embyLibraryLimiter, async (req, res) => {
   }
 
   try {
-    const viewsUrl = `${normalizedUrl}/Users/${userId}/Views`;
+    const viewsUrl = `${normalizedUrl}/Users/${userId}/Items`;
     const ax = await axios({
       method: "GET",
       url: viewsUrl,
       headers: { "X-Emby-Token": accessToken },
-      params: { IncludeExternalContent: false },
+      params: {
+        Recursive: false,
+        IncludeItemTypes: "CollectionFolder,UserView,Folder",
+        Fields: "CollectionType"
+      },
       timeout: 5000,
       validateStatus: () => true
     });
@@ -133,13 +137,25 @@ app.post("/api/get-emby-libraries", embyLibraryLimiter, async (req, res) => {
 
     const items = ax.data?.Items || ax.data?.items || [];
     const libraries = items
-      .map(item => ({
-        id: item.Id,
-        name: item.Name,
-        collectionType: item.CollectionType
-      }))
+      .map(item => {
+        const name = item.Name;
+        let collectionType = item.CollectionType;
+        if (!collectionType && typeof name === "string") {
+          const normalized = name.toLowerCase();
+          if (normalized.includes("movie")) {
+            collectionType = "movies";
+          } else if (normalized.includes("tv") || normalized.includes("show") || normalized.includes("series")) {
+            collectionType = "tvshows";
+          }
+        }
+        return {
+          id: item.Id,
+          name,
+          collectionType
+        };
+      })
       .filter(item => item.id && item.name)
-      .filter(item => item.collectionType === "movies" || item.collectionType === "tvshows");
+      .filter(item => !item.collectionType || item.collectionType === "movies" || item.collectionType === "tvshows");
 
     return res.json({ items: libraries });
   } catch (e) {
