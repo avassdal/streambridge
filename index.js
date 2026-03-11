@@ -31,6 +31,14 @@ const embyAuthLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const embyLibraryLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 30,
+  message: { err: "Too many library requests. Try again later." },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 app.use(express.json({ limit: "2kb" }));
 
 app.post("/api/get-emby-tokens", embyAuthLimiter, async (req, res) => {
@@ -88,6 +96,56 @@ app.post("/api/get-emby-tokens", embyAuthLimiter, async (req, res) => {
     const msg = e?.response?.data?.Message || e?.response?.data?.message || e?.code || e?.message || "Request failed";
     const code = e?.code || (e?.response?.status ? `HTTP ${e.response.status}` : "");
     console.warn("Auth failed:", redactServerUrl(normalizedUrl), code ? "→" : "", code || "", msg);
+    return res.status(502).json({ err: String(msg) });
+  }
+});
+
+app.post("/api/get-emby-libraries", embyLibraryLimiter, async (req, res) => {
+  const serverUrl = typeof req.body?.serverUrl === "string" ? req.body.serverUrl.trim() : "";
+  const userId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
+  const accessToken = typeof req.body?.accessToken === "string" ? req.body.accessToken.trim() : "";
+
+  if (!serverUrl || !userId || !accessToken) {
+    return res.status(400).json({ err: "serverUrl, userId, and accessToken are required" });
+  }
+
+  const normalizedUrl = serverUrl.replace(/\/+$/, "");
+  if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+    return res.status(400).json({ err: "URL must start with http:// or https://" });
+  }
+
+  try {
+    const viewsUrl = `${normalizedUrl}/Users/${userId}/Views`;
+    const ax = await axios({
+      method: "GET",
+      url: viewsUrl,
+      headers: { "X-Emby-Token": accessToken },
+      params: { IncludeExternalContent: false },
+      timeout: 5000,
+      validateStatus: () => true
+    });
+
+    if (ax.status !== 200) {
+      const msg = ax.data?.Message || ax.data?.message || `HTTP ${ax.status}`;
+      console.warn("Libraries failed:", redactServerUrl(normalizedUrl), "→", ax.status, msg);
+      return res.status(400).json({ err: msg });
+    }
+
+    const items = ax.data?.Items || ax.data?.items || [];
+    const libraries = items
+      .map(item => ({
+        id: item.Id,
+        name: item.Name,
+        collectionType: item.CollectionType
+      }))
+      .filter(item => item.id && item.name)
+      .filter(item => item.collectionType === "movies" || item.collectionType === "tvshows");
+
+    return res.json({ items: libraries });
+  } catch (e) {
+    const msg = e?.response?.data?.Message || e?.response?.data?.message || e?.code || e?.message || "Request failed";
+    const code = e?.code || (e?.response?.status ? `HTTP ${e.response.status}` : "");
+    console.warn("Libraries failed:", redactServerUrl(normalizedUrl), code ? "→" : "", code || "", msg);
     return res.status(502).json({ err: String(msg) });
   }
 });
@@ -158,6 +216,8 @@ function decodeCfg(str) {
     cfg.streamName = cfg.serverType === 'jellyfin' ? 'Jellyfin' : 'Emby';
   }
   if (!cfg.hideStreamTypes) cfg.hideStreamTypes = []; // Default: show all stream types
+  if (!Array.isArray(cfg.movieLibraryIds)) cfg.movieLibraryIds = [];
+  if (!Array.isArray(cfg.seriesLibraryIds)) cfg.seriesLibraryIds = [];
   
   return cfg;
 }

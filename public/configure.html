@@ -69,6 +69,22 @@ a:hover{text-decoration:underline}
   padding:1.25rem;margin-top:1rem;
 }
 
+.library-selection{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;
+}
+.library-column{
+  background:#0f1722;border:1px solid #283141;border-radius:8px;padding:0.75rem;
+}
+.library-header{
+  font-size:0.85rem;font-weight:600;color:var(--text-dim);margin-bottom:0.5rem;
+}
+.library-list{
+  display:flex;flex-direction:column;gap:0.4rem;max-height:180px;overflow:auto;
+}
+.library-item{
+  display:flex;align-items:center;gap:0.45rem;font-size:0.85rem;
+}
+
 .panel{
   background:var(--panel);padding:2rem;border-radius:var(--radius);
   width:100%;max-width:600px;box-shadow:var(--shadow);
@@ -234,6 +250,22 @@ iframe[id*="kofi-wo-container"] {
       <div class="field-group">
         <label>Access Token / API Key</label>
         <input name="accessToken" required>
+      </div>
+      <div class="field-group">
+        <label>Libraries to include</label>
+        <small>Select which Emby libraries to query. If none are selected, all libraries will be used.</small>
+        <button type="button" id="loadLibrariesBtn" style="margin-top:0.6rem">Load libraries</button>
+        <div class="library-selection" style="margin-top:0.8rem">
+          <div class="library-column">
+            <div class="library-header">Movie Libraries</div>
+            <div id="movieLibraries" class="library-list"></div>
+          </div>
+          <div class="library-column">
+            <div class="library-header">TV Libraries</div>
+            <div id="seriesLibraries" class="library-list"></div>
+          </div>
+        </div>
+        <small id="librariesStatus" style="margin-top:0.6rem"></small>
       </div>
     </div>
     
@@ -414,6 +446,91 @@ async function authenticateEmby(serverUrl, username, password) {
   };
 }
 
+function getSelectedLibraryIds(inputName) {
+  return Array.from(document.querySelectorAll(`input[name="${inputName}"]:checked`))
+    .map(el => el.value);
+}
+
+function renderLibraryList(container, libraries, inputName, selectedIds) {
+  container.innerHTML = "";
+  if (!libraries.length) {
+    const empty = document.createElement("div");
+    empty.textContent = "No libraries found";
+    empty.style.color = "var(--text-dim)";
+    empty.style.fontSize = "0.85rem";
+    container.appendChild(empty);
+    return;
+  }
+
+  libraries.forEach(lib => {
+    const label = document.createElement("label");
+    label.className = "library-item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.name = inputName;
+    checkbox.value = lib.id;
+    checkbox.checked = selectedIds && selectedIds.size > 0 ? selectedIds.has(lib.id) : true;
+
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(lib.name));
+    container.appendChild(label);
+  });
+}
+
+async function loadLibraries() {
+  const statusEl = $("#librariesStatus");
+  const button = $("#loadLibrariesBtn");
+  const cfgForm = $("#cfg");
+  const serverUrl = cfgForm.serverUrl.value.trim();
+  const userId = cfgForm.userId.value.trim();
+  const accessToken = cfgForm.accessToken.value.trim();
+
+  if (!serverUrl || !userId || !accessToken) {
+    statusEl.textContent = "Please fill in Server URL, User ID, and Access Token first.";
+    return;
+  }
+
+  const selectedMovies = new Set(getSelectedLibraryIds("movieLibraryIds"));
+  const selectedSeries = new Set(getSelectedLibraryIds("seriesLibraryIds"));
+
+  button.disabled = true;
+  statusEl.textContent = "Loading libraries…";
+
+  try {
+    const res = await fetch("/api/get-emby-libraries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        serverUrl,
+        userId,
+        accessToken
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      statusEl.textContent = data.err || `Failed to load libraries (HTTP ${res.status})`;
+      return;
+    }
+
+    const items = Array.isArray(data.items) ? data.items : [];
+    const movieLibraries = items.filter(item => item.collectionType === "movies");
+    const seriesLibraries = items.filter(item => item.collectionType === "tvshows");
+
+    renderLibraryList($("#movieLibraries"), movieLibraries, "movieLibraryIds", selectedMovies);
+    renderLibraryList($("#seriesLibraries"), seriesLibraries, "seriesLibraryIds", selectedSeries);
+
+    statusEl.textContent = `Loaded ${movieLibraries.length} movie libraries and ${seriesLibraries.length} TV libraries.`;
+  } catch (err) {
+    statusEl.textContent = `Failed to load libraries: ${err.message || err}`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$("#loadLibrariesBtn").addEventListener("click", loadLibraries);
+
 // JELLYFIN: Jellyfin authentication function - Commented out for future Jellyfin support
 // async function authenticateJellyfin(url, user, pass) {
 //   try {
@@ -574,8 +691,18 @@ $("#cfg").addEventListener("submit",e=>{
     cfg.includeSubtitles = false;
   }
 
+  const movieLibraryIds = formData.getAll("movieLibraryIds");
+  if (movieLibraryIds.length > 0) {
+    cfg.movieLibraryIds = movieLibraryIds;
+  }
+
+  const seriesLibraryIds = formData.getAll("seriesLibraryIds");
+  if (seriesLibraryIds.length > 0) {
+    cfg.seriesLibraryIds = seriesLibraryIds;
+  }
+
   const cfg64=btoa(unescape(encodeURIComponent(JSON.stringify(cfg))))
-                .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+                .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
 
   const httpURL    = `${location.origin}/${cfg64}/manifest.json`;
   const stremioURL = `stremio://${location.host}/${cfg64}/manifest.json`;
